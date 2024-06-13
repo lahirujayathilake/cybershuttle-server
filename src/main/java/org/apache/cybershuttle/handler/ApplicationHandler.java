@@ -1,7 +1,9 @@
 package org.apache.cybershuttle.handler;
 
 import org.apache.airavata.model.experiment.ExperimentModel;
+import org.apache.cybershuttle.model.application.ApplicationConfig;
 import org.apache.cybershuttle.model.application.ApplicationType;
+import org.apache.cybershuttle.repo.ApplicationConfigRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -12,9 +14,11 @@ public class ApplicationHandler {
     private final static Logger LOGGER = LoggerFactory.getLogger(ApplicationHandler.class);
 
     private final ExperimentHandler experimentHandler;
+    private final ApplicationConfigRepository applicationConfigRepository;
 
-    public ApplicationHandler(ExperimentHandler experimentHandler) {
+    public ApplicationHandler(ExperimentHandler experimentHandler, ApplicationConfigRepository applicationConfigRepository) {
         this.experimentHandler = experimentHandler;
+        this.applicationConfigRepository = applicationConfigRepository;
     }
 
     public String launchApplication(ApplicationType applicationType, String relatedExpId) {
@@ -35,7 +39,11 @@ public class ApplicationHandler {
         }
 
         ExperimentModel appExperiment = applicationType.getGeneratorSupplier().get().generateExperiment(relatedExp);
-        return experimentHandler.createAndLaunchExperiment(relatedExp.getGatewayId(), appExperiment);
+        String appExpId = experimentHandler.createAndLaunchExperiment(relatedExp.getGatewayId(), appExperiment);
+
+        applicationConfigRepository.save(new ApplicationConfig(appExpId, applicationType));
+
+        return appExpId;
     }
 
 }

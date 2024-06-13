@@ -3,23 +3,32 @@ server:
 
 cybershuttle:
   region: "local"
+  server:
+    port:
+      ranges: 8080-8089, 9000-9009
 
 spring:
   application:
     name: cyber-shuttle-server
   datasource:
-    url: "jdbc:mysql://localhost:3306/cyber-shuttle-server"
-    username: admin
-    password: admin
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: "jdbc:postgresql://localhost:15432/cybershuttle"
+    username: "postgres"
+    password: "example"
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: false
-    database-platform: org.hibernate.dialect.MySQL8Dialect
 
 logging:
   pattern:
     level: '%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]'
   level:
     root: info
+
+
+    org:
+      hibernate:
+        jpa:
+          internal:
+            EntityManagerFactoryRegistry=DEBUG:

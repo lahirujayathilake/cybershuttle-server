@@ -1,0 +1,1 @@
+* Run `docker-compose -p cybershuttle up -d`
