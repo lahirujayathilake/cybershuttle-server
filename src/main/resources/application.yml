@@ -1,0 +1,25 @@
+server:
+  port: 8081
+
+cybershuttle:
+  region: "local"
+
+spring:
+  application:
+    name: cyber-shuttle-server
+  datasource:
+    url: "jdbc:mysql://localhost:3306/cyber-shuttle-server"
+    username: admin
+    password: admin
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+
+logging:
+  pattern:
+    level: '%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]'
+  level:
+    root: info
