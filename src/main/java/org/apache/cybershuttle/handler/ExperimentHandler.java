@@ -1,7 +1,7 @@
 package org.apache.cybershuttle.handler;
 
 import org.apache.airavata.model.experiment.ExperimentModel;
-import org.apache.cybershuttle.config.UserContext;
+import org.apache.cybershuttle.holder.UserContext;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

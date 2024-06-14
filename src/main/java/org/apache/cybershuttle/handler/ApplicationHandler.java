@@ -1,5 +1,6 @@
 package org.apache.cybershuttle.handler;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.apache.airavata.model.experiment.ExperimentModel;
 import org.apache.cybershuttle.model.application.ApplicationConfig;
 import org.apache.cybershuttle.model.application.ApplicationType;
@@ -15,10 +16,12 @@ public class ApplicationHandler {
 
     private final ExperimentHandler experimentHandler;
     private final ApplicationConfigRepository applicationConfigRepository;
+    private final PortAllocationService portAllocationService;
 
-    public ApplicationHandler(ExperimentHandler experimentHandler, ApplicationConfigRepository applicationConfigRepository) {
+    public ApplicationHandler(ExperimentHandler experimentHandler, ApplicationConfigRepository applicationConfigRepository, PortAllocationService portAllocationService) {
         this.experimentHandler = experimentHandler;
         this.applicationConfigRepository = applicationConfigRepository;
+        this.portAllocationService = portAllocationService;
     }
 
     public String launchApplication(ApplicationType applicationType, String relatedExpId) {
@@ -44,6 +47,22 @@ public class ApplicationHandler {
         applicationConfigRepository.save(new ApplicationConfig(appExpId, applicationType));
 
         return appExpId;
+    }
+
+    public int allocatePort(String applicationExpId) {
+        return portAllocationService.allocatePort(findAppConfig(applicationExpId));
+    }
+
+    public void releasePort(String applicationExpId) {
+        portAllocationService.releasePort(findAppConfig(applicationExpId));
+    }
+
+    private ApplicationConfig findAppConfig(String applicationExpId) {
+        return applicationConfigRepository.getByExpId(applicationExpId)
+                .orElseThrow(() -> {
+                    LOGGER.error("Could not find an application with the id: {}", applicationExpId);
+                    return new EntityNotFoundException("Could not find an application with the id: " + applicationExpId);
+                });
     }
 
 }

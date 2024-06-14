@@ -1,4 +1,4 @@
-package org.apache.cybershuttle.config;
+package org.apache.cybershuttle.holder;
 
 import org.apache.airavata.model.security.AuthzToken;
 

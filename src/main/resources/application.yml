@@ -6,6 +6,8 @@ cybershuttle:
   server:
     port:
       ranges: 8080-8089, 9000-9009
+  application:
+    timeout: 1800000 # 30 min
 
 spring:
   application:

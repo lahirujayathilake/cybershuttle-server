@@ -35,7 +35,7 @@ public abstract class ExperimentGenerator {
         model.setUserName(relatedExp.getUserName());
         model.setGatewayId(relatedExp.getGatewayId());
         model.setExperimentType(ExperimentType.SINGLE_APPLICATION);
-//        model.setExecutionId("VMD-Execution");
+//        model.setExecutionId("VMD-Execution"); TODO - update after the the application creation
         model.setExecutionId(relatedExp.getExecutionId());
 
         UserConfigurationDataModel userConfigurationData = relatedExp.getUserConfigurationData();
