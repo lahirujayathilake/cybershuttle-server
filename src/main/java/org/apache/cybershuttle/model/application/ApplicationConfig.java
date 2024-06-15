@@ -21,6 +21,9 @@ public class ApplicationConfig {
     @Id
     @Column(name = "exp_id", nullable = false)
     private String expId;
+    
+    @Column(name = "related_exp_id", nullable = false)
+    private String relatedExpId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "application_type", nullable = false)
@@ -34,8 +37,9 @@ public class ApplicationConfig {
     public ApplicationConfig() {
     }
 
-    public ApplicationConfig(String expId, ApplicationType applicationType) {
+    public ApplicationConfig(String expId, String relatedExpId, ApplicationType applicationType) {
         this.expId = expId;
+        this.relatedExpId = relatedExpId;
         this.applicationType = applicationType;
     }
 
@@ -45,6 +49,22 @@ public class ApplicationConfig {
 
     public String getExpId() {
         return expId;
+    }
+
+    public String getRelatedExpId() {
+        return relatedExpId;
+    }
+
+    public void setRelatedExpId(String relatedExpId) {
+        this.relatedExpId = relatedExpId;
+    }
+
+    public Set<PortAllocation> getPortAllocations() {
+        return portAllocations;
+    }
+
+    public void setPortAllocations(Set<PortAllocation> portAllocations) {
+        this.portAllocations = portAllocations;
     }
 
     public void setExpId(String expId) {

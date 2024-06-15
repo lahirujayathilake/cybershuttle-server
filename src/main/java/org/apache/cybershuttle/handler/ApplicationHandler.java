@@ -2,6 +2,7 @@ package org.apache.cybershuttle.handler;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.apache.airavata.model.experiment.ExperimentModel;
+import org.apache.cybershuttle.model.PortAllocation;
 import org.apache.cybershuttle.model.application.ApplicationConfig;
 import org.apache.cybershuttle.model.application.ApplicationType;
 import org.apache.cybershuttle.repo.ApplicationConfigRepository;
@@ -44,12 +45,20 @@ public class ApplicationHandler {
         ExperimentModel appExperiment = applicationType.getGeneratorSupplier().get().generateExperiment(relatedExp);
         String appExpId = experimentHandler.createAndLaunchExperiment(relatedExp.getGatewayId(), appExperiment);
 
-        applicationConfigRepository.save(new ApplicationConfig(appExpId, applicationType));
+        applicationConfigRepository.save(new ApplicationConfig(appExpId, relatedExpId, applicationType));
 
         return appExpId;
     }
 
-    public int allocatePort(String applicationExpId) {
+    public void terminateApplication(String appExpId) {
+        applicationConfigRepository.delete(findAppConfig(appExpId));
+    }
+
+    public void terminateApplication(ApplicationConfig applicationConfig) {
+        applicationConfigRepository.delete(applicationConfig);
+    }
+
+    public PortAllocation allocatePort(String applicationExpId) {
         return portAllocationService.allocatePort(findAppConfig(applicationExpId));
     }
 
@@ -57,7 +66,11 @@ public class ApplicationHandler {
         portAllocationService.releasePort(findAppConfig(applicationExpId));
     }
 
-    private ApplicationConfig findAppConfig(String applicationExpId) {
+    public ApplicationConfig checkForLaunchedApplication(ApplicationType applicationType, String relatedExpId) {
+        return applicationConfigRepository.findByApplicationTypeAndRelatedExpId(applicationType, relatedExpId).orElse(null);
+    }
+
+    public ApplicationConfig findAppConfig(String applicationExpId) {
         return applicationConfigRepository.getByExpId(applicationExpId)
                 .orElseThrow(() -> {
                     LOGGER.error("Could not find an application with the id: {}", applicationExpId);
