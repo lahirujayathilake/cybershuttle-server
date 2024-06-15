@@ -1,7 +1,9 @@
 package org.apache.cybershuttle.model.application;
 
 import org.apache.airavata.model.experiment.ExperimentModel;
+import org.springframework.stereotype.Component;
 
+@Component
 public class VMDGenerator extends ExperimentGenerator {
 
     @Override

@@ -8,6 +8,7 @@ import org.apache.cybershuttle.model.application.ApplicationType;
 import org.apache.cybershuttle.repo.ApplicationConfigRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,11 +19,13 @@ public class ApplicationHandler {
     private final ExperimentHandler experimentHandler;
     private final ApplicationConfigRepository applicationConfigRepository;
     private final PortAllocationService portAllocationService;
+    private final Environment env;
 
-    public ApplicationHandler(ExperimentHandler experimentHandler, ApplicationConfigRepository applicationConfigRepository, PortAllocationService portAllocationService) {
+    public ApplicationHandler(ExperimentHandler experimentHandler, ApplicationConfigRepository applicationConfigRepository, PortAllocationService portAllocationService, Environment env) {
         this.experimentHandler = experimentHandler;
         this.applicationConfigRepository = applicationConfigRepository;
         this.portAllocationService = portAllocationService;
+        this.env = env;
     }
 
     public String launchApplication(ApplicationType applicationType, String relatedExpId) {
@@ -42,7 +45,7 @@ public class ApplicationHandler {
             throw new IllegalArgumentException("Related experiment: " + relatedExpId + " doesn't have a process model");
         }
 
-        ExperimentModel appExperiment = applicationType.getGeneratorSupplier().get().generateExperiment(relatedExp);
+        ExperimentModel appExperiment = applicationType.getGeneratorSupplier().get().generateExperiment(relatedExp, getApplicationInterfaceId(applicationType));
         String appExpId = experimentHandler.createAndLaunchExperiment(relatedExp.getGatewayId(), appExperiment);
 
         applicationConfigRepository.save(new ApplicationConfig(appExpId, relatedExpId, applicationType));
@@ -76,6 +79,10 @@ public class ApplicationHandler {
                     LOGGER.error("Could not find an application with the id: {}", applicationExpId);
                     return new EntityNotFoundException("Could not find an application with the id: " + applicationExpId);
                 });
+    }
+
+    private String getApplicationInterfaceId(ApplicationType applicationType) {
+        return env.getProperty("cybershuttle.application.interface.id." + applicationType.name().toLowerCase());
     }
 
 }

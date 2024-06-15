@@ -5,9 +5,13 @@ cybershuttle:
   region: "local"
   server:
     port:
-      ranges: 8080-8089, 9000-9009
+      ranges: 9000-9999, 1800-1900
   application:
     timeout: 1800000 # 30 min
+    interface:
+      id:
+        vmd: "VMD_3dc0183b-326e-4c0e-9ee7-9eac7f56a26a"
+        jl: "JL"
 
 spring:
   application:
