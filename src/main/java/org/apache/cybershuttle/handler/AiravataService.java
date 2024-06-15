@@ -24,7 +24,8 @@ public class AiravataService {
     public Airavata.Client airavata() {
         try {
 //            URL trustStoreUrl = getClass().getClassLoader().getResource("client_truststore.jks");
-            URL trustStoreUrl = getClass().getClassLoader().getResource("trustore.jks");
+            URL trustStoreUrl = getClass().getClassLoader().getResource("truststore.jks");
+            LOGGER.info("Creating Airavata client with the TrustStore URL - " + trustStoreUrl);
             return AiravataClientFactory.createAiravataSecureClient(SERVER_URL, PORT, trustStoreUrl.toURI().getPath(), "airavata", TIMEOUT);
 
         } catch (AiravataClientException | URISyntaxException e) {
