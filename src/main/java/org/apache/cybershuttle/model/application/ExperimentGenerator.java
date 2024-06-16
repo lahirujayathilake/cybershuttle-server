@@ -46,6 +46,7 @@ public abstract class ExperimentGenerator {
 
         UserConfigurationDataModel userConfigurationData = relatedExp.getUserConfigurationData();
         userConfigurationData.getComputationalResourceScheduling().setStaticWorkingDir(workingDir);
+        userConfigurationData.getComputationalResourceScheduling().setOverrideLoginUserName("gridchem");
         model.setUserConfigurationData(userConfigurationData);
 
         List<InputDataObjectType> applicationInputs = new ArrayList<>();
