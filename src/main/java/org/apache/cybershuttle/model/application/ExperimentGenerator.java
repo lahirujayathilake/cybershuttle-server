@@ -35,8 +35,8 @@ public abstract class ExperimentGenerator {
 
         // Create ExperimentModel with common properties
         ExperimentModel model = new ExperimentModel();
-        String experimentId = this.getApplicationType().name() + "-" + UUID.randomUUID();
-        model.setExperimentId(experimentId);
+        String applicationId = this.getApplicationType().name() + "-" + UUID.randomUUID();
+        model.setExperimentId(applicationId);
         model.setExperimentName(this.getApplicationType().name() + "-" + relatedExp.getExperimentName());
         model.setProjectId(relatedExp.getProjectId());
         model.setUserName(relatedExp.getUserName());
@@ -56,9 +56,9 @@ public abstract class ExperimentGenerator {
         inputWorkingDir.setValue(workingDir);
 
         InputDataObjectType inputExpId = new InputDataObjectType();
-        inputExpId.setName("exp_id");
+        inputExpId.setName("application_id");
         inputExpId.setType(DataType.STRING);
-        inputExpId.setValue(experimentId);
+        inputExpId.setValue(applicationId);
 
         applicationInputs.add(inputWorkingDir);
         applicationInputs.add(inputExpId);

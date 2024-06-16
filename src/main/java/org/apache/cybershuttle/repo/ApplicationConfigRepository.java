@@ -9,7 +9,7 @@ import javax.swing.text.html.Option;
 import java.util.Optional;
 
 @Repository
-public interface ApplicationConfigRepository extends JpaRepository<ApplicationConfig, Long> {
+public interface ApplicationConfigRepository extends JpaRepository<ApplicationConfig, String> {
 
     Optional<ApplicationConfig> getByExpId(String expId);
 

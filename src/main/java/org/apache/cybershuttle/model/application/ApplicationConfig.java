@@ -19,6 +19,8 @@ import java.util.Set;
 public class ApplicationConfig {
 
     @Id
+    private String id;
+
     @Column(name = "exp_id", nullable = false)
     private String expId;
     
@@ -37,7 +39,8 @@ public class ApplicationConfig {
     public ApplicationConfig() {
     }
 
-    public ApplicationConfig(String expId, String relatedExpId, ApplicationType applicationType) {
+    public ApplicationConfig(String id, String expId, String relatedExpId, ApplicationType applicationType) {
+        this.id = id;
         this.expId = expId;
         this.relatedExpId = relatedExpId;
         this.applicationType = applicationType;
@@ -45,6 +48,14 @@ public class ApplicationConfig {
 
     private void onCreate() {
         createdAt = Instant.now().toEpochMilli();
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getExpId() {

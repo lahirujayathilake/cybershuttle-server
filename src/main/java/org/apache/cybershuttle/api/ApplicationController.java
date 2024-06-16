@@ -47,11 +47,11 @@ public class ApplicationController {
             if (existingApp.getPortAllocations() != null && !existingApp.getPortAllocations().isEmpty()) {
                 // No existing deferred result but existing application means returning the existing port allocations
                 DeferredResult<LaunchApplicationResponse> deferredResult = new DeferredResult<>(timeout);
-                deferredResult.setResult(new LaunchApplicationResponse(existingApp.getExpId(), existingApp.getRelatedExpId(), existingApp.getPortAllocations().stream().map(PortAllocation::getPort).collect(Collectors.toList())));
+                deferredResult.setResult(new LaunchApplicationResponse(existingApp.getId(), existingApp.getRelatedExpId(), existingApp.getPortAllocations().stream().map(PortAllocation::getPort).collect(Collectors.toList())));
                 return deferredResult;
 
             } else {
-                DeferredResult<LaunchApplicationResponse> existingDeferredResult = deferredResultHolder.get(existingApp.getExpId());
+                DeferredResult<LaunchApplicationResponse> existingDeferredResult = deferredResultHolder.get(existingApp.getId());
                 if (existingDeferredResult != null) {
                     return existingDeferredResult;
                 }
@@ -60,33 +60,33 @@ public class ApplicationController {
             }
         }
 
-        String applicationExpId = applicationHandler.launchApplication(request.getApplication(), request.getExpId());
+        String applicationId = applicationHandler.launchApplication(request.getApplication(), request.getExpId());
 
         DeferredResult<LaunchApplicationResponse> deferredResult = new DeferredResult<>(timeout);
-        deferredResultHolder.put(applicationExpId, deferredResult);
+        deferredResultHolder.put(applicationId, deferredResult);
 
         deferredResult.onTimeout(() -> {
-            deferredResultHolder.remove(applicationExpId);
+            deferredResultHolder.remove(applicationId);
             deferredResult.setErrorResult("Request timed out to launch the application: " + applicationHandler);
         });
 
-        deferredResult.onCompletion(() -> deferredResultHolder.remove(applicationExpId));
+        deferredResult.onCompletion(() -> deferredResultHolder.remove(applicationId));
         return deferredResult;
     }
 
-    @PostMapping("/terminate/{expId}")
-    public ResponseEntity<String> terminateApplication(@PathVariable("expId") String expId) {
-        applicationHandler.terminateApplication(expId);
-        return ResponseEntity.ok().body("Application released for experiment ID: " + expId);
+    @PostMapping("/terminate/{appId}")
+    public ResponseEntity<String> terminateApplication(@PathVariable("appId") String appId) {
+        applicationHandler.terminateApplication(appId);
+        return ResponseEntity.ok().body("Application released for experiment ID: " + appId);
     }
 
-    @PostMapping("/{expId}/connect/info")
-    public ResponseEntity<AppConnectInfoResponse> initiateApplicationConnection(@PathVariable("expId") String expId) {
+    @PostMapping("/{appId}/connect/info")
+    public ResponseEntity<AppConnectInfoResponse> initiateApplicationConnection(@PathVariable("appId") String appId) {
         // TODO - handle for multiple port allocations
-        DeferredResult<LaunchApplicationResponse> deferredResult = deferredResultHolder.get(expId);
+        DeferredResult<LaunchApplicationResponse> deferredResult = deferredResultHolder.get(appId);
 
         if (deferredResult != null) {
-            PortAllocation portAllocation = applicationHandler.allocatePort(expId);
+            PortAllocation portAllocation = applicationHandler.allocatePort(appId);
             deferredResult.setResult(new LaunchApplicationResponse(portAllocation.getApplicationConfig().getExpId(),
                     portAllocation.getApplicationConfig().getRelatedExpId(),
                     Stream.of(portAllocation.getPort()).toList()));
@@ -95,13 +95,13 @@ public class ApplicationController {
 
         ApplicationConfig appConfig;
         try {
-            appConfig = applicationHandler.findAppConfig(expId);
+            appConfig = applicationHandler.findAppConfig(appId);
         } catch (EntityNotFoundException e) {
-            throw new EntityNotFoundException("No pending request found for experiment ID: " + expId, e);
+            throw new EntityNotFoundException("No pending request found for experiment ID: " + appId, e);
         }
 
         if (appConfig.getPortAllocations() == null || appConfig.getPortAllocations().isEmpty()) {
-            PortAllocation portAllocation = applicationHandler.allocatePort(expId);
+            PortAllocation portAllocation = applicationHandler.allocatePort(appId);
             return ResponseEntity.ok().body(new AppConnectInfoResponse(portAllocation.getPort()));
         }
 

@@ -46,23 +46,25 @@ public class ApplicationHandler {
         }
 
         ExperimentModel appExperiment = applicationType.getGeneratorSupplier().get().generateExperiment(relatedExp, getApplicationInterfaceId(applicationType));
+        String applicationId = appExperiment.getExperimentId();
         String appExpId = experimentHandler.createAndLaunchExperiment(relatedExp.getGatewayId(), appExperiment);
+        LOGGER.info("Launch {} typed application. Id: {}, Application exp Id: {}, Related Exp Id: {}", applicationType.name(), applicationId, appExpId, relatedExpId);
 
-        applicationConfigRepository.save(new ApplicationConfig(appExpId, relatedExpId, applicationType));
+        applicationConfigRepository.save(new ApplicationConfig(applicationId, appExpId, relatedExpId, applicationType));
 
-        return appExpId;
+        return applicationId;
     }
 
-    public void terminateApplication(String appExpId) {
-        applicationConfigRepository.delete(findAppConfig(appExpId));
+    public void terminateApplication(String appId) {
+        applicationConfigRepository.delete(findAppConfig(appId));
     }
 
     public void terminateApplication(ApplicationConfig applicationConfig) {
         applicationConfigRepository.delete(applicationConfig);
     }
 
-    public PortAllocation allocatePort(String applicationExpId) {
-        return portAllocationService.allocatePort(findAppConfig(applicationExpId));
+    public PortAllocation allocatePort(String applicationId) {
+        return portAllocationService.allocatePort(findAppConfig(applicationId));
     }
 
     public void releasePort(String applicationExpId) {
@@ -73,11 +75,11 @@ public class ApplicationHandler {
         return applicationConfigRepository.findByApplicationTypeAndRelatedExpId(applicationType, relatedExpId).orElse(null);
     }
 
-    public ApplicationConfig findAppConfig(String applicationExpId) {
-        return applicationConfigRepository.getByExpId(applicationExpId)
+    public ApplicationConfig findAppConfig(String applicationId) {
+        return applicationConfigRepository.findById(applicationId)
                 .orElseThrow(() -> {
-                    LOGGER.error("Could not find an application with the id: {}", applicationExpId);
-                    return new EntityNotFoundException("Could not find an application with the id: " + applicationExpId);
+                    LOGGER.error("Could not find an application with the id: {}", applicationId);
+                    return new EntityNotFoundException("Could not find an application with the id: " + applicationId);
                 });
     }
 
