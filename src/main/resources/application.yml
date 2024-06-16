@@ -13,6 +13,10 @@ cybershuttle:
         vmd: "VMD_3dc0183b-326e-4c0e-9ee7-9eac7f56a26a"
         jl: "JL"
 
+airavata:
+  truststore:
+    path: /Users/lahiruj/Projects/airavata/cybershuttle/cybershuttle-server/src/main/resources/truststore.jks
+
 spring:
   application:
     name: cyber-shuttle-server

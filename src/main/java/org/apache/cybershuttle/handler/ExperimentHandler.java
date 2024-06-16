@@ -1,11 +1,15 @@
 package org.apache.cybershuttle.handler;
 
+import org.apache.airavata.api.Airavata;
+import org.apache.airavata.model.appcatalog.groupresourceprofile.GroupResourceProfile;
 import org.apache.airavata.model.experiment.ExperimentModel;
 import org.apache.cybershuttle.holder.UserContext;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class ExperimentHandler {
@@ -19,7 +23,22 @@ public class ExperimentHandler {
 
     public ExperimentModel getExperiment(String experimentId) {
         try {
-            return airavataService.airavata().getExperiment(UserContext.authzToken(), experimentId);
+            Airavata.Client airavata = airavataService.airavata();
+            ExperimentModel experiment = airavata.getExperiment(UserContext.authzToken(), experimentId);
+            GroupResourceProfile groupResourceProfile = airavata.getGroupResourceProfile(UserContext.authzToken(), experiment.getUserConfigurationData().getGroupResourceProfileId());
+
+            // Always get the Default allocation
+            if (!"Default".equalsIgnoreCase(groupResourceProfile.getGroupResourceProfileName())) {
+                List<GroupResourceProfile> groupResourceList = airavata.getGroupResourceList(UserContext.authzToken(), experiment.getGatewayId());
+
+                groupResourceList.stream()
+                        .filter(profile -> "Default".equalsIgnoreCase(profile.getGroupResourceProfileName()))
+                        .findFirst()
+                        .ifPresent(profile -> experiment.getUserConfigurationData().setGroupResourceProfileId(profile.getGroupResourceProfileId()));
+            }
+
+            return experiment;
+
         } catch (TException e) {
             LOGGER.error("Error while extracting the experiment with the id: {}", experimentId);
             throw new RuntimeException("Error while extracting the experiment with the id: " + experimentId, e);

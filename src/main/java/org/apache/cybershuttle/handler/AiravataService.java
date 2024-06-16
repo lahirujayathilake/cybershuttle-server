@@ -5,10 +5,14 @@ import org.apache.airavata.api.client.AiravataClientFactory;
 import org.apache.airavata.model.error.AiravataClientException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.security.KeyStore;
 
 @Service
 public class AiravataService {
@@ -20,15 +24,16 @@ public class AiravataService {
     private static final int PORT = 9930;
     private static final int TIMEOUT = 100000;
 
+    @Value("${airavata.truststore.path}")
+    private String trustStorePath;
+
 
     public Airavata.Client airavata() {
         try {
-//            URL trustStoreUrl = getClass().getClassLoader().getResource("client_truststore.jks");
-            URL trustStoreUrl = getClass().getClassLoader().getResource("truststore.jks");
-            LOGGER.info("Creating Airavata client with the TrustStore URL - " + trustStoreUrl);
-            return AiravataClientFactory.createAiravataSecureClient(SERVER_URL, PORT, trustStoreUrl.toURI().getPath(), "airavata", TIMEOUT);
+            LOGGER.info("Creating Airavata client with the TrustStore URL - " + trustStorePath);
+            return AiravataClientFactory.createAiravataSecureClient(SERVER_URL, PORT, trustStorePath, "airavata", TIMEOUT);
 
-        } catch (AiravataClientException | URISyntaxException e) {
+        } catch (AiravataClientException e) {
             LOGGER.error("Error while creating Airavata client", e);
             throw new RuntimeException("Error while creating Airavata client", e);
         }
