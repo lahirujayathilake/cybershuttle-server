@@ -47,7 +47,6 @@ public class PortAllocationService {
                 for (int port = range.getStartPort(); port <= range.getEndPort(); port++) {
                     if (!isPortAllocated(port)) {
                         PortAllocation allocation = new PortAllocation(port, applicationConfig);
-                        portAllocationRepository.save(allocation);
                         allocatedPortsCache.add(port);
                         return allocation;
                     }

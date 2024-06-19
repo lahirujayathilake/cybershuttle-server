@@ -23,7 +23,7 @@ public class ApplicationConfig {
 
     @Column(name = "exp_id", nullable = false)
     private String expId;
-    
+
     @Column(name = "related_exp_id", nullable = false)
     private String relatedExpId;
 
@@ -33,6 +33,10 @@ public class ApplicationConfig {
 
     @OneToMany(mappedBy = "applicationConfig", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<PortAllocation> portAllocations = new HashSet<>();
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private Status status;
 
     private long createdAt;
 
@@ -44,6 +48,7 @@ public class ApplicationConfig {
         this.expId = expId;
         this.relatedExpId = relatedExpId;
         this.applicationType = applicationType;
+        this.status = Status.PENDING;
     }
 
     private void onCreate() {
@@ -100,11 +105,25 @@ public class ApplicationConfig {
         portAllocation.setApplicationConfig(null);
     }
 
+    public Status getStatus() {
+        return status;
+    }
+
+    public void setStatus(Status status) {
+        this.status = status;
+    }
+
     public long getCreatedAt() {
         return createdAt;
     }
 
     public void setCreatedAt(long createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public enum Status {
+        PENDING,
+        COMPLETED,
+        TERMINATED,
     }
 }

@@ -5,6 +5,7 @@ import org.apache.airavata.model.experiment.ExperimentModel;
 import org.apache.cybershuttle.model.PortAllocation;
 import org.apache.cybershuttle.model.application.ApplicationConfig;
 import org.apache.cybershuttle.model.application.ApplicationType;
+import org.apache.cybershuttle.model.exception.InternalServerException;
 import org.apache.cybershuttle.repo.ApplicationConfigRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +49,7 @@ public class ApplicationHandler {
         ExperimentModel appExperiment = applicationType.getGeneratorSupplier().get().generateExperiment(relatedExp, getApplicationInterfaceId(applicationType));
         String applicationId = appExperiment.getExperimentId();
         String appExpId = experimentHandler.createAndLaunchExperiment(relatedExp.getGatewayId(), appExperiment);
-        LOGGER.info("Launch {} typed application. Id: {}, Application exp Id: {}, Related Exp Id: {}", applicationType.name(), applicationId, appExpId, relatedExpId);
+        LOGGER.info("Launched {} typed application. Id: {}, Application exp Id: {}, Related Exp Id: {}", applicationType.name(), applicationId, appExpId, relatedExpId);
 
         applicationConfigRepository.save(new ApplicationConfig(applicationId, appExpId, relatedExpId, applicationType));
 
@@ -56,7 +57,21 @@ public class ApplicationHandler {
     }
 
     public void terminateApplication(String appId) {
-        applicationConfigRepository.delete(findAppConfig(appId));
+        try {
+            ApplicationConfig appConfig = findAppConfig(appId);
+            LOGGER.info("Retrieving the experiment relevant for application: {} to terminate", appId);
+            ExperimentModel experiment = experimentHandler.getExperiment(appConfig.getExpId());
+            LOGGER.info("Terminating the application: {}", appId);
+            experimentHandler.terminateApplication(experiment.getGatewayId(), experiment.getExperimentId());
+
+            appConfig.setStatus(ApplicationConfig.Status.TERMINATED);
+            applicationConfigRepository.save(appConfig);
+            portAllocationService.releasePort(appConfig);
+
+        } catch (Exception e) {
+            LOGGER.error("Error while terminating the application with the Id: {}", appId);
+            throw new InternalServerException("Error while terminating the application with the Id: " + appId, e);
+        }
     }
 
     public void terminateApplication(ApplicationConfig applicationConfig) {
@@ -81,6 +96,27 @@ public class ApplicationHandler {
                     LOGGER.error("Could not find an application with the id: {}", applicationId);
                     return new EntityNotFoundException("Could not find an application with the id: " + applicationId);
                 });
+    }
+
+    public ApplicationConfig initiateAgentConnection(String applicationId) {
+        ApplicationConfig appConfig = findAppConfig(applicationId);
+        if (appConfig.getStatus() == ApplicationConfig.Status.PENDING) {
+            LOGGER.info("Initiating the connection with the Agent for the application: {}", applicationId);
+            PortAllocation portAllocation = portAllocationService.allocatePort(appConfig);
+            appConfig.addPortAllocation(portAllocation);
+
+            LOGGER.info("Allocated the port: {} for application: {}", portAllocation.getPort(), applicationId);
+            appConfig.setStatus(ApplicationConfig.Status.COMPLETED);
+            applicationConfigRepository.save(appConfig);
+
+            return appConfig;
+
+        } else if (appConfig.getStatus() == ApplicationConfig.Status.COMPLETED) {
+            return appConfig;
+        }
+
+        LOGGER.error("No pending application: {} found to initiate an Agent connection", applicationId);
+        throw new IllegalArgumentException("No pending application:" + applicationId + " found to initiate an Agent connection");
     }
 
     private String getApplicationInterfaceId(ApplicationType applicationType) {

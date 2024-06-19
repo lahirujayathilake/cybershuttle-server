@@ -40,7 +40,7 @@ public class ApplicationController {
     }
 
 
-    @PostMapping("/launch")
+    @PostMapping("/async/launch")
     public DeferredResult<LaunchApplicationResponse> launchApplication(@Valid @RequestBody LaunchApplicationRequest request) {
         ApplicationConfig existingApp = applicationHandler.checkForLaunchedApplication(request.getApplication(), request.getExpId());
         if (existingApp != null) {
@@ -74,13 +74,28 @@ public class ApplicationController {
         return deferredResult;
     }
 
+    @PostMapping("/launch")
+    public ResponseEntity<LaunchApplicationResponse> connectApplication(@Valid @RequestBody LaunchApplicationRequest request) {
+        ApplicationConfig existingApp = applicationHandler.checkForLaunchedApplication(request.getApplication(), request.getExpId());
+        if (existingApp != null) {
+            if (existingApp.getStatus() == ApplicationConfig.Status.COMPLETED && existingApp.getPortAllocations() != null && !existingApp.getPortAllocations().isEmpty()) {
+                return ResponseEntity.ok(new LaunchApplicationResponse(existingApp.getId(), existingApp.getRelatedExpId(), ApplicationConfig.Status.COMPLETED.name(), existingApp.getPortAllocations().stream().map(PortAllocation::getPort).collect(Collectors.toList())));
+            } else if (existingApp.getStatus() == ApplicationConfig.Status.PENDING) {
+                return ResponseEntity.accepted().body(new LaunchApplicationResponse(existingApp.getId(), existingApp.getRelatedExpId(), ApplicationConfig.Status.PENDING.name()));
+            }
+        }
+
+        String applicationId = applicationHandler.launchApplication(request.getApplication(), request.getExpId());
+        return ResponseEntity.accepted().body(new LaunchApplicationResponse(applicationId, request.getExpId(), ApplicationConfig.Status.PENDING.name()));
+    }
+
     @PostMapping("/terminate/{appId}")
     public ResponseEntity<String> terminateApplication(@PathVariable("appId") String appId) {
         applicationHandler.terminateApplication(appId);
-        return ResponseEntity.ok().body("Application released for experiment ID: " + appId);
+        return ResponseEntity.ok().body("Terminated the application with the Id: " + appId);
     }
 
-    @PostMapping("/{appId}/connect/info")
+    @PostMapping("/{appId}/connect")
     public ResponseEntity<AppConnectInfoResponse> initiateApplicationConnection(@PathVariable("appId") String appId) {
         // TODO - handle for multiple port allocations
         DeferredResult<LaunchApplicationResponse> deferredResult = deferredResultHolder.get(appId);
@@ -105,6 +120,12 @@ public class ApplicationController {
             return ResponseEntity.ok().body(new AppConnectInfoResponse(portAllocation.getPort()));
         }
 
+        return ResponseEntity.ok().body(new AppConnectInfoResponse(appConfig.getPortAllocations().stream().findFirst().get().getPort()));
+    }
+
+    @PostMapping("/{appId}/connect/info")
+    public ResponseEntity<AppConnectInfoResponse> initiateAgentConnection(@PathVariable("appId") String appId) {
+        ApplicationConfig appConfig = applicationHandler.initiateAgentConnection(appId);
         return ResponseEntity.ok().body(new AppConnectInfoResponse(appConfig.getPortAllocations().stream().findFirst().get().getPort()));
     }
 }

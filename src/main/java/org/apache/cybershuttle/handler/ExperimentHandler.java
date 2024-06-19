@@ -31,10 +31,7 @@ public class ExperimentHandler {
             if (!"Default".equalsIgnoreCase(groupResourceProfile.getGroupResourceProfileName())) {
                 List<GroupResourceProfile> groupResourceList = airavata.getGroupResourceList(UserContext.authzToken(), experiment.getGatewayId());
 
-                groupResourceList.stream()
-                        .filter(profile -> "Default".equalsIgnoreCase(profile.getGroupResourceProfileName()))
-                        .findFirst()
-                        .ifPresent(profile -> experiment.getUserConfigurationData().setGroupResourceProfileId(profile.getGroupResourceProfileId()));
+                groupResourceList.stream().filter(profile -> "Default".equalsIgnoreCase(profile.getGroupResourceProfileName())).findFirst().ifPresent(profile -> experiment.getUserConfigurationData().setGroupResourceProfileId(profile.getGroupResourceProfileId()));
             }
 
             return experiment;
@@ -47,12 +44,24 @@ public class ExperimentHandler {
 
     public String createAndLaunchExperiment(String gatewayId, ExperimentModel experiment) {
         try {
+            LOGGER.info("Creating an Airavata Experiment for {}", experiment.getExperimentName());
             String experimentId = airavataService.airavata().createExperiment(UserContext.authzToken(), gatewayId, experiment);
+            LOGGER.info("Launching the application, Id: {}, Name: {}", experimentId, experiment.getExperimentName());
             airavataService.airavata().launchExperiment(UserContext.authzToken(), experimentId, gatewayId);
             return experimentId;
         } catch (TException e) {
             LOGGER.error("Error while creating the experiment with the name: {}", experiment.getExperimentName());
             throw new RuntimeException("Error while creating the experiment with the name: " + experiment.getExperimentName(), e);
+        }
+    }
+
+    public void terminateApplication(String gatewayId, String experimentId) {
+        try {
+            LOGGER.info("Terminating the application with experiment Id: {}", experimentId);
+            airavataService.airavata().terminateExperiment(UserContext.authzToken(), experimentId, gatewayId);
+        } catch (Exception e) {
+            LOGGER.error("Error while terminating the application with the experiment Id: {}", experimentId);
+            throw new RuntimeException("Error while terminating the application with the experiment Id: " + experimentId, e);
         }
     }
 }

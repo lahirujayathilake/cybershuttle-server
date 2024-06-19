@@ -52,11 +52,19 @@ public abstract class ExperimentGenerator {
 
         InputDataObjectType inputWorkingDir = new InputDataObjectType();
         inputWorkingDir.setName("working_dir");
+        inputWorkingDir.setApplicationArgument("-i");
+        inputWorkingDir.setApplicationArgumentIsSet(true);
+        inputWorkingDir.setRequiredToAddedToCommandLine(true);
+        inputWorkingDir.setIsRequired(true);
         inputWorkingDir.setType(DataType.STRING);
         inputWorkingDir.setValue(workingDir);
 
         InputDataObjectType inputExpId = new InputDataObjectType();
         inputExpId.setName("application_id");
+        inputExpId.setApplicationArgument("-a");
+        inputExpId.setApplicationArgumentIsSet(true);
+        inputExpId.setRequiredToAddedToCommandLine(true);
+        inputExpId.setIsRequired(true);
         inputExpId.setType(DataType.STRING);
         inputExpId.setValue(applicationId);
 
