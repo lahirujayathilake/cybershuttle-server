@@ -22,7 +22,7 @@ public abstract class ExperimentGenerator {
     protected abstract ApplicationType getApplicationType();
 
 
-    public final ExperimentModel generateExperiment(ExperimentModel relatedExp, String executionId) {
+    public final ExperimentModel generateExperiment(ExperimentModel relatedExp, String executionId, int wallTimeLimit) {
 
         String workingDir = relatedExp.getProcesses().get(0).getTasks().stream()
                 .filter(task -> task.getTaskType() == TaskTypes.JOB_SUBMISSION)
@@ -46,6 +46,7 @@ public abstract class ExperimentGenerator {
 
         UserConfigurationDataModel userConfigurationData = relatedExp.getUserConfigurationData();
         userConfigurationData.getComputationalResourceScheduling().setStaticWorkingDir(workingDir);
+        userConfigurationData.getComputationalResourceScheduling().setWallTimeLimit(wallTimeLimit);
         model.setUserConfigurationData(userConfigurationData);
 
         List<InputDataObjectType> applicationInputs = new ArrayList<>();

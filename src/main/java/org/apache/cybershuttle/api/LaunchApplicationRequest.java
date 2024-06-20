@@ -13,6 +13,8 @@ public class LaunchApplicationRequest {
     @NotBlank(message = "Experiment ID is required")
     private String expId;
 
+    private int wallTimeLimit = 30;
+
     public ApplicationType getApplication() {
         return application;
     }
@@ -27,5 +29,13 @@ public class LaunchApplicationRequest {
 
     public void setExpId(String expId) {
         this.expId = expId;
+    }
+
+    public int getWallTimeLimit() {
+        return wallTimeLimit;
+    }
+
+    public void setWallTimeLimit(int wallTimeLimit) {
+        this.wallTimeLimit = wallTimeLimit;
     }
 }

@@ -29,7 +29,7 @@ public class ApplicationHandler {
         this.env = env;
     }
 
-    public String launchApplication(ApplicationType applicationType, String relatedExpId) {
+    public String launchApplication(ApplicationType applicationType, String relatedExpId, int wallTimeLimit) {
         ExperimentModel relatedExp = experimentHandler.getExperiment(relatedExpId);
         if (relatedExp == null) {
             LOGGER.error("Experiment: {} cannot be null", relatedExpId);
@@ -46,7 +46,7 @@ public class ApplicationHandler {
             throw new IllegalArgumentException("Related experiment: " + relatedExpId + " doesn't have a process model");
         }
 
-        ExperimentModel appExperiment = applicationType.getGeneratorSupplier().get().generateExperiment(relatedExp, getApplicationInterfaceId(applicationType));
+        ExperimentModel appExperiment = applicationType.getGeneratorSupplier().get().generateExperiment(relatedExp, getApplicationInterfaceId(applicationType), wallTimeLimit);
         String applicationId = appExperiment.getExperimentId();
         String appExpId = experimentHandler.createAndLaunchExperiment(relatedExp.getGatewayId(), appExperiment);
         LOGGER.info("Launched {} typed application. Id: {}, Application exp Id: {}, Related Exp Id: {}", applicationType.name(), applicationId, appExpId, relatedExpId);
