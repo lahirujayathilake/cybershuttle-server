@@ -11,7 +11,7 @@ cybershuttle:
     interface:
       id:
         vmd: "VMD_3dc0183b-326e-4c0e-9ee7-9eac7f56a26a"
-        jl: "JL"
+        jupyter_lab: "JupyterLab_60b84fee-be54-4548-9653-f299651bd486"
 
 airavata:
   truststore:
