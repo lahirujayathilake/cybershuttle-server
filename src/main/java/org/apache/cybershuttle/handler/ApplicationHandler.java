@@ -12,10 +12,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.util.NoSuchElementException;
+import java.util.concurrent.TimeUnit;
+
 @Service
 public class ApplicationHandler {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(ApplicationHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ApplicationHandler.class);
+    private static final String WS_HOST = "18.217.79.150";
 
     private final ExperimentHandler experimentHandler;
     private final ApplicationConfigRepository applicationConfigRepository;
@@ -64,6 +69,32 @@ public class ApplicationHandler {
             LOGGER.info("Terminating the application: {}", appId);
             experimentHandler.terminateApplication(experiment.getGatewayId(), experiment.getExperimentId());
 
+            if (appConfig.getApplicationType() == ApplicationType.VMD && !appConfig.getPortAllocations().isEmpty()) {
+                for (PortAllocation allocation : appConfig.getPortAllocations()) {
+                    if (allocation.getWsPID() != null) {
+                        try {
+                            ProcessHandle processHandle = ProcessHandle.of(allocation.getWsPID()).orElseThrow();
+
+                            LOGGER.info("Attempting graceful shutdown of websockify process and its children with PID: {}", allocation.getWsPID());
+                            processHandle.descendants().forEach(ProcessHandle::destroy);
+
+                            boolean terminated = processHandle.onExit().orTimeout(5, TimeUnit.SECONDS).isDone();
+
+                            if (!terminated) {
+                                // Forced Termination
+                                LOGGER.warn("Websockify process did not terminate gracefully. Forcing termination.");
+                                processHandle.descendants().forEach(ProcessHandle::destroyForcibly);
+                                processHandle.destroyForcibly();
+                            } else {
+                                LOGGER.info("Websockify process terminated successfully.");
+                            }
+                        } catch (NoSuchElementException e) {
+                            LOGGER.warn("Websockify process with PID: {} not found.", allocation.getWsPID());
+                        }
+                    }
+                }
+            }
+
             appConfig.setStatus(ApplicationConfig.Status.TERMINATED);
             applicationConfigRepository.save(appConfig);
             portAllocationService.releasePort(appConfig);
@@ -91,11 +122,10 @@ public class ApplicationHandler {
     }
 
     public ApplicationConfig findAppConfig(String applicationId) {
-        return applicationConfigRepository.findById(applicationId)
-                .orElseThrow(() -> {
-                    LOGGER.error("Could not find an application with the id: {}", applicationId);
-                    return new EntityNotFoundException("Could not find an application with the id: " + applicationId);
-                });
+        return applicationConfigRepository.findById(applicationId).orElseThrow(() -> {
+            LOGGER.error("Could not find an application with the id: {}", applicationId);
+            return new EntityNotFoundException("Could not find an application with the id: " + applicationId);
+        });
     }
 
     public ApplicationConfig initiateAgentConnection(String applicationId) {
@@ -103,6 +133,21 @@ public class ApplicationHandler {
         if (appConfig.getStatus() == ApplicationConfig.Status.PENDING) {
             LOGGER.info("Initiating the connection with the Agent for the application: {}", applicationId);
             PortAllocation portAllocation = portAllocationService.allocatePort(appConfig);
+
+            if (appConfig.getApplicationType() == ApplicationType.VMD) {
+                Integer websockifyPort = portAllocation.getPort() + 100;
+                LOGGER.info("Creating a websockify connection for the VNC server port: {}, WS port: {}", portAllocation.getPort(), websockifyPort);
+                ProcessBuilder pb = new ProcessBuilder("websockify", "-D", "0.0.0.0:" + websockifyPort, WS_HOST + ":" + portAllocation.getPort());
+                try {
+                    Process process = pb.start();
+                    LOGGER.info("Started the WS connection, WS port: {} for VMD: {}", websockifyPort, appConfig.getId());
+                    portAllocation.setWebsocketPort(websockifyPort);
+                    portAllocation.setWsPID(process.pid());
+                } catch (IOException e) {
+                    LOGGER.error("Error starting the WS connection for application: {} for vnc port: {}, ws port: {}", appConfig.getId(), portAllocation.getPort(), websockifyPort, e);
+                }
+            }
+
             appConfig.addPortAllocation(portAllocation);
 
             LOGGER.info("Allocated the port: {} for application: {}", portAllocation.getPort(), applicationId);

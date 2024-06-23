@@ -5,7 +5,7 @@ cybershuttle:
   region: "local"
   server:
     port:
-      ranges: 9002-9999, 1800-1900
+      ranges: 9002-9999
   application:
     timeout: 1800000 # 30 min
     interface:
