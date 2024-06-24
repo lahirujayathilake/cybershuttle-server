@@ -24,14 +24,15 @@ public abstract class ExperimentGenerator {
 
     public final ExperimentModel generateExperiment(ExperimentModel relatedExp, String executionId, int wallTimeLimit) {
 
-        String workingDir = relatedExp.getProcesses().get(0).getTasks().stream()
-                .filter(task -> task.getTaskType() == TaskTypes.JOB_SUBMISSION)
-                .flatMap(task -> task.getJobs().stream())
-                .filter(Objects::nonNull)
-                .map(JobModel::getWorkingDir)
-                .filter(StringUtils::isNotBlank)
+        String workingDir = relatedExp.getProcesses().stream()
+                .flatMap(process -> process.getTasks().stream()
+                        .filter(task -> task.getTaskType() == TaskTypes.JOB_SUBMISSION)
+                        .flatMap(task -> task.getJobs().stream())
+                        .filter(Objects::nonNull)
+                        .map(JobModel::getWorkingDir)
+                        .filter(StringUtils::isNotBlank))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Error extracting the working directory in the related experiment: " + relatedExp.getExperimentId()));
+                .orElseThrow(() -> new IllegalArgumentException("Error: No suitable working directory found in the related experiment: " + relatedExp.getExperimentId()));
 
         // Create ExperimentModel with common properties
         ExperimentModel model = new ExperimentModel();

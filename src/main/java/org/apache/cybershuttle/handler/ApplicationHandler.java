@@ -12,8 +12,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.NoSuchElementException;
+import java.io.InputStreamReader;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -71,25 +72,28 @@ public class ApplicationHandler {
 
             if (appConfig.getApplicationType() == ApplicationType.VMD && !appConfig.getPortAllocations().isEmpty()) {
                 for (PortAllocation allocation : appConfig.getPortAllocations()) {
-                    if (allocation.getWsPID() != null) {
-                        try {
-                            ProcessHandle processHandle = ProcessHandle.of(allocation.getWsPID()).orElseThrow();
+                    if (allocation.getWebsocketPort() != null) {
+                        Process findProcess = new ProcessBuilder("pgrep", "-f", "websockify.*" + allocation.getWebsocketPort()).start();
+                        try (BufferedReader reader = new BufferedReader(new InputStreamReader(findProcess.getInputStream()))) {
+                            String pid = reader.readLine();
+                            if (pid != null) {
+                                ProcessHandle processHandle = ProcessHandle.of(Long.parseLong(pid)).orElseThrow();
 
-                            LOGGER.info("Attempting graceful shutdown of websockify process and its children with PID: {}", allocation.getWsPID());
-                            processHandle.descendants().forEach(ProcessHandle::destroy);
+                                LOGGER.info("Attempting graceful shutdown of websockify process with PID: {}", pid);
+                                processHandle.descendants().forEach(ProcessHandle::destroy);
 
-                            boolean terminated = processHandle.onExit().orTimeout(5, TimeUnit.SECONDS).isDone();
+                                boolean terminated = processHandle.onExit().orTimeout(5, TimeUnit.SECONDS).isDone();
 
-                            if (!terminated) {
-                                // Forced Termination
-                                LOGGER.warn("Websockify process did not terminate gracefully. Forcing termination.");
-                                processHandle.descendants().forEach(ProcessHandle::destroyForcibly);
-                                processHandle.destroyForcibly();
+                                if (!terminated) {
+                                    LOGGER.warn("Websockify process did not terminate gracefully. Forcing termination.");
+                                    processHandle.descendants().forEach(ProcessHandle::destroyForcibly);
+                                    processHandle.destroyForcibly();
+                                } else {
+                                    LOGGER.info("Websockify process terminated successfully.");
+                                }
                             } else {
-                                LOGGER.info("Websockify process terminated successfully.");
+                                LOGGER.warn("Websockify process for port {} not found.", allocation.getWebsocketPort());
                             }
-                        } catch (NoSuchElementException e) {
-                            LOGGER.warn("Websockify process with PID: {} not found.", allocation.getWsPID());
                         }
                     }
                 }
@@ -135,7 +139,7 @@ public class ApplicationHandler {
             PortAllocation portAllocation = portAllocationService.allocatePort(appConfig);
 
             if (appConfig.getApplicationType() == ApplicationType.VMD) {
-                Integer websockifyPort = portAllocation.getPort() + 100;
+                Integer websockifyPort = portAllocation.getPort();
                 LOGGER.info("Creating a websockify connection for the VNC server port: {}, WS port: {}", portAllocation.getPort(), websockifyPort);
                 ProcessBuilder pb = new ProcessBuilder("websockify", "-D", "0.0.0.0:" + websockifyPort, WS_HOST + ":" + portAllocation.getPort());
                 try {
