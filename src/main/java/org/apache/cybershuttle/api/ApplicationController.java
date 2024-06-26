@@ -1,9 +1,12 @@
 package org.apache.cybershuttle.api;
 
+import org.apache.cybershuttle.handler.AgentCommunicationHandler;
 import org.apache.cybershuttle.handler.ApplicationHandler;
 import org.apache.cybershuttle.holder.DeferredResultHolder;
 import org.apache.cybershuttle.model.PortAllocation;
 import org.apache.cybershuttle.model.application.ApplicationConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,15 +26,20 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/v1/application")
 public class ApplicationController {
 
+    private final static Logger LOGGER = LoggerFactory.getLogger(ApplicationController.class);
+
     private final ApplicationHandler applicationHandler;
+    private final AgentCommunicationHandler agentCommunicationHandler;
     private final DeferredResultHolder deferredResultHolder;
 
     @Value("${cybershuttle.application.timeout}")
     private long timeout;
 
-    public ApplicationController(ApplicationHandler applicationHandler, DeferredResultHolder deferredResultHolder) {
+    public ApplicationController(ApplicationHandler applicationHandler, DeferredResultHolder deferredResultHolder,
+                                 AgentCommunicationHandler agentCommunicationHandler) {
         this.applicationHandler = applicationHandler;
         this.deferredResultHolder = deferredResultHolder;
+        this.agentCommunicationHandler = agentCommunicationHandler;
     }
 
     @GetMapping("/status")
@@ -39,6 +47,23 @@ public class ApplicationController {
         return "Application is running";
     }
 
+    @GetMapping("/agent/{processId}")
+    public ResponseEntity<AgentInfoResponse> getAgentInfo(@PathVariable("processId") String processId) {
+        return ResponseEntity.accepted().body(agentCommunicationHandler.isAgentUp(processId));
+    }
+
+    @PostMapping("/agent/execute")
+    public ResponseEntity<AgentCommandAck> runCommandOnAgent(@Valid @RequestBody AgentCommandRequest commandRequest) {
+        LOGGER.info("Received command request to run on process {}", commandRequest.getProcessId());
+        if (agentCommunicationHandler.isAgentUp(commandRequest.getProcessId()).isAgentUp()) {
+            return ResponseEntity.accepted().body(agentCommunicationHandler.runCommandOnAgent(commandRequest));
+        } else {
+            LOGGER.warn("No agent is available to run on process {}", commandRequest.getProcessId());
+            AgentCommandAck ack = new AgentCommandAck();
+            ack.setError("Agent not found");
+            return ResponseEntity.accepted().body(ack);
+        }
+    }
 
 //    @PostMapping("/async/launch")
 //    public DeferredResult<LaunchApplicationResponse> launchApplication(@Valid @RequestBody LaunchApplicationRequest request) {
