@@ -8,6 +8,7 @@ import org.apache.airavata.model.experiment.UserConfigurationDataModel;
 import org.apache.airavata.model.job.JobModel;
 import org.apache.airavata.model.task.TaskTypes;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.cybershuttle.holder.UserContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +41,7 @@ public abstract class ExperimentGenerator {
         model.setExperimentId(applicationId);
         model.setExperimentName(this.getApplicationType().name() + "-" + relatedExp.getExperimentName());
         model.setProjectId(relatedExp.getProjectId());
-        model.setUserName(relatedExp.getUserName());
+        model.setUserName(UserContext.authzToken().getClaimsMap().get("userName"));
         model.setGatewayId(relatedExp.getGatewayId());
         model.setExperimentType(ExperimentType.SINGLE_APPLICATION);
         model.setExecutionId(executionId);
