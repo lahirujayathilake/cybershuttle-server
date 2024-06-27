@@ -31,6 +31,14 @@ message TerminateExecutionResponse {
   string description = 2;
 }
 
+message TunnelCreationResponse {
+  string status = 1;
+}
+
+message TunnelTerminationResponse {
+  string status = 1;
+}
+
 message AgentMessage {
   oneof message {
     AgentPing agentPing = 1;
@@ -45,6 +53,21 @@ message ContainerExecutionRequest {
   string containerName = 2;
   repeated string arguments = 3;
   string mountPath = 4;
+}
+
+message TunnelCreationRequest {
+  string destinationHost = 1;
+  string destinationPort = 2;
+  string sshUserName = 3;
+  string sourcePort = 4;
+  string sshKeyPath = 5;
+  string password = 6;
+}
+
+message TunnelTerminationRequest {
+  string destinationHost = 1;
+  int32 destinationPort = 2;
+  string sourcePort = 3;
 }
 
 message CommandExecutionRequest {
@@ -67,5 +90,6 @@ message ServerMessage {
     CommandExecutionRequest commandExecutionRequest = 2;
     TerminateExecutionRequest terminateExecutionRequest = 3;
     KillAgentRequest killAgentRequest = 4;
+    TunnelCreationRequest tunnelCreationRequest = 5;
   }
 }

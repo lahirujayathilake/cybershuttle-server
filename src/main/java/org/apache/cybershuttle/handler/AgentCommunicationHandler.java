@@ -3,13 +3,12 @@ package org.apache.cybershuttle.handler;
 import io.grpc.stub.StreamObserver;
 import net.devh.boot.grpc.server.service.GrpcService;
 import org.apache.airavata.agent.*;
-import org.apache.cybershuttle.api.AgentCommandAck;
-import org.apache.cybershuttle.api.AgentCommandRequest;
-import org.apache.cybershuttle.api.AgentInfoResponse;
+import org.apache.cybershuttle.api.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -31,6 +30,35 @@ public class AgentCommunicationHandler extends AgentCommunicationServiceGrpc.Age
         }
     }
 
+    public AgentTunnelAck runTunnelOnAgent(AgentTunnelCreationRequest tunnelRequest) {
+        AgentTunnelAck ack = new AgentTunnelAck();
+
+        if (PROCESS_STREAM_MAPPING.containsKey(tunnelRequest.getProcessId()) &&
+                ACTIVE_STREAMS.containsKey(PROCESS_STREAM_MAPPING.get(tunnelRequest.getProcessId()))) {
+            String agentId = PROCESS_STREAM_MAPPING.get(tunnelRequest.getProcessId());
+            StreamObserver<ServerMessage> streamObserver = ACTIVE_STREAMS.get(agentId);
+
+            try {
+                streamObserver.onNext(ServerMessage.newBuilder().setTunnelCreationRequest(TunnelCreationRequest.newBuilder()
+                        .setDestinationHost(tunnelRequest.getDestinationHost())
+                        .setDestinationPort(tunnelRequest.getDestinationPort())
+                        .setSourcePort(tunnelRequest.getSourcePort())
+                        .setSshUserName(tunnelRequest.getSshUserName())
+                        .setPassword(Optional.ofNullable(tunnelRequest.getPassword()).orElse(""))
+                        .setSshKeyPath(Optional.ofNullable(tunnelRequest.getSshKeyPath()).orElse(""))
+                        .build()).build());
+            } catch (Exception e) {
+                LOGGER.error("Failed to submit tunnel creation request to process {} on agent {}", tunnelRequest.getProcessId(), agentId, e);
+                ack.setError(e.getMessage());
+            }
+
+        } else {
+            LOGGER.warn("No agent found to run the tunnel on process {}", tunnelRequest.getProcessId());
+            ack.setError("No agent found to run the tunnel on process " + tunnelRequest.getProcessId());
+        }
+
+        return ack;
+    }
     public AgentCommandAck runCommandOnAgent(AgentCommandRequest commandRequest) {
 
         String executionId = UUID.randomUUID().toString();

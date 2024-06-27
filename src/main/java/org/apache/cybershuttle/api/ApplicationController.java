@@ -52,6 +52,10 @@ public class ApplicationController {
         return ResponseEntity.accepted().body(agentCommunicationHandler.isAgentUp(processId));
     }
 
+    @PostMapping("/agent/tunnel")
+    public ResponseEntity<AgentTunnelAck> runTunnelCreationOnAgent(@Valid @RequestBody AgentTunnelCreationRequest tunnelRequest) {
+        return ResponseEntity.accepted().body(agentCommunicationHandler.runTunnelOnAgent(tunnelRequest));
+    }
     @PostMapping("/agent/execute")
     public ResponseEntity<AgentCommandAck> runCommandOnAgent(@Valid @RequestBody AgentCommandRequest commandRequest) {
         LOGGER.info("Received command request to run on process {}", commandRequest.getProcessId());
