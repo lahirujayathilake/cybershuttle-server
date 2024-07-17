@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -17,7 +18,7 @@ import (
 
 func main() {
 
-	serverUrl := "localhost:9090"
+	serverUrl := "20.51.202.251:9090"
 	processId := "process1"
 	agentId := "agent1"
 	mainProcessChannel := make(chan struct{})
@@ -27,13 +28,34 @@ func main() {
 		args := os.Args[1:]
 
 		cmd := exec.Command(args[0], args[1:]...)
-		stdout, err := cmd.Output()
 
+		stdout, err := cmd.StdoutPipe()
 		if err != nil {
-			log.Printf("Failed while running the main task %v", err)
-		} else {
-			fmt.Println(string(stdout))
+			log.Fatalf("Failed to get stdout pipe: %s", err)
 		}
+		// Start the command
+		if err := cmd.Start(); err != nil {
+			log.Fatalf("Failed to start command: %s", err)
+		}
+
+		// Create a scanner to read the command's output line by line
+		scanner := bufio.NewScanner(stdout)
+		for scanner.Scan() {
+			// Print each line of the command's output
+			fmt.Println(scanner.Text())
+		}
+
+		// Check for errors in scanning
+		if err := scanner.Err(); err != nil {
+			log.Fatalf("Error reading stdout: %s", err)
+		}
+
+		// Wait for the command to complete
+		if err := cmd.Wait(); err != nil {
+			log.Fatalf("Command finished with error: %s", err)
+		}
+
+		fmt.Println("Command executed successfully")
 		close(mainProcessChannel)
 
 	}()

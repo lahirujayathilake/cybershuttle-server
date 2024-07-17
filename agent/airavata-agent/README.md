@@ -7,6 +7,18 @@ go install
 go run agent.go echo $JAVA_HOME
 ```
 
+## Build the agent
+
+### Build for the current platform
+```
+go build
+```
+
+### Build for a specific platform
+```
+env GOOS=linux GOARCH=amd64 go build
+```
+
 ## Building proto files
 
 ```
